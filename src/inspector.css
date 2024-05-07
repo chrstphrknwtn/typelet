@@ -1,0 +1,142 @@
+* {
+  transition: background-color 150ms ease-in-out;
+  transition-delay: 0;
+}
+
+#i_modal {
+  --fgColor: #222;
+  --fgColorMuted: #666;
+  --bgColor: white;
+  --separatorBorderColor: #ddd;
+
+  --inputBorderColor: hsla(0, 0%, 50%, 60%);
+  --inputBgColor: hsla(0, 0%, 50%, 12%);
+  --inputHoverColor: hsl(0, 0%, 12%);
+  --inputHoverBgColor: hsla(0, 0%, 50%, 15%);
+  --inputActiveColor: hsla(18, 100%, 65%, 100%);
+  --inputActiveBgColor: hsla(18, 100%, 55%, 10%);
+
+  --padding: 16px;
+  --inputRadius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  #i_modal {
+    --fgColor: white;
+    --fgColorMuted: #999;
+    --bgColor: #222;
+    --separatorBorderColor: #444;
+
+    --inputBgColor: hsla(0, 0%, 50%, 15%);
+    --inputHoverColor: var(--fgColor);
+    --inputHoverBgColor: hsla(0, 0%, 50%, 25%);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#i_modal {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  top: 32px;
+  left: 32px;
+  width: 256px;
+  font-size: 12px;
+  line-height: 16px;
+  font-family: ui-system, sans-serif;
+  color: var(--fgColor);
+  background-color: var(--bgColor);
+  border: 1pt solid var(--borderColor);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+  opacity: 0;
+  animation: fadeInUp 200ms ease-out forwards;
+}
+
+#i_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  color: var(--fgColorMuted);
+  border-bottom: 1pt solid var(--separatorBorderColor);
+  cursor: move;
+}
+
+.i_button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-width: 24px;
+  color: var(--fgColor);
+  background-color: var(--inputBgColor);
+  border: 0 none;
+  border-radius: var(--inputRadius);
+  cursor: pointer;
+}
+
+.i_button:hover {
+  color: var(--inputHoverColor);
+  background-color: var(--inputHoverBgColor);
+}
+
+.i_button.isActive {
+  color: var(--inputActiveColor);
+  background-color: var(--inputActiveBgColor);
+}
+
+.i_pickerHover {
+  background-color: hsl(18, 100%, 55%);
+}
+
+#i_close {
+  color: var(--fgColorMuted);
+  background-color: transparent;
+}
+
+#i_close:hover {
+  background-color: var(--inputHoverBgColor);
+}
+
+#i_panel {
+  padding-bottom: var(--padding);
+}
+
+.i_pSection {
+  padding: var(--padding) 0 0 var(--padding);
+}
+
+.i_pDatumK {
+  margin-bottom: 4px;
+  color: var(--fgColorMuted);
+}
+
+.i_pDatumV {
+  max-width: 100%;
+  min-height: 16px;
+  content: ' ';
+  color: var(--fgColor);
+  font-weight: 600;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overflow: auto;
+}
+
+.i_pDatumV::-webkit-scrollbar {
+  display: none;
+}
