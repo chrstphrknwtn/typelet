@@ -1,225 +1,180 @@
+import html from 'src/inspector.html'
 import css from 'src/inspector.css'
+import documentCss from 'src/document.css'
 
-interface ElementArgs {
-  tag: string
-  id?: string
-  className?: string
-  text?: string
-  html?: string
-}
+if (!customElements.get('x-inspector')) {
+  const docEvent = document.addEventListener
+  const docEventRm = document.removeEventListener
 
-function node({ tag, id, className, text, html }: ElementArgs) {
-  const element = document.createElement(tag)
+  class Inspector extends HTMLElement {
+    private docStyle: HTMLElement | null
+    private header: HTMLElement | null
+    private close: HTMLButtonElement | null
+    private pickerBtn: HTMLButtonElement | null
 
-  if (id) element.id = id
-  if (className) element.classList.add(className)
-  if (text) element.innerText = text
-  if (html) element.innerHTML = html
+    // Drag
+    private offsetX: number = 0
+    private offsetY: number = 0
+    private isDragging: boolean = false
 
-  return element
-}
+    // Picker
+    private pickerActive: boolean = false
+    private targetElement: HTMLElement | null = null
+    private pickerHoverClass = 'inspector-hover'
 
-function sectionFactory(title: string) {
-  const section = node({ tag: 'div', className: 'i_pSection' })
-  const key = node({ tag: 'div', className: 'i_pDatumK', text: title })
-  const value = node({
-    tag: 'div',
-    className: 'i_pDatumV',
-    text: ' '
-  })
-  section.append(key, value)
+    // Panel values
+    private fontFamily: HTMLElement | null
+    private fontSize: HTMLElement | null
+    private fontWeight: HTMLElement | null
+    private lineHeight: HTMLElement | null
+    private letterSpacing: HTMLElement | null
+    private textTransform: HTMLElement | null
 
-  return { section, key, value }
-}
-
-function Inspector() {
-  const state = {
-    targetElement: undefined,
-    pickerActive: false
-  }
-  const pickerHoverClass = 'i_pickerHover'
-
-  /*
-  Root
-  */
-  const styles = node({ tag: 'style', id: 'i_style', html: css })
-  const modal = node({ tag: 'div', id: 'i_modal' })
-
-  /*
-  Header
-  */
-  const header = node({ tag: 'header', id: 'i_header' })
-  header.innerText = `Type Inspector`
-  const headerClose = node({ tag: 'div', id: 'i_close', className: 'i_button' })
-  headerClose.innerText = '×'
-  headerClose.onclick = destroy
-
-  const pickerToggleButton = node({
-    tag: 'button',
-    id: 'i_pickerToggleButton',
-    className: 'i_button',
-    text: 'T'
-  })
-
-  pickerToggleButton.onclick = function () {
-    if (state.pickerActive) {
-      disablePicker()
-    } else {
-      enablePicker()
+    constructor() {
+      super()
+      this.attachShadow({ mode: 'open' })
     }
-  }
 
-  header.prepend(pickerToggleButton)
-  header.append(headerClose)
+    connectedCallback() {
+      // We have to inject a couple of styles to the parent document
+      this.docStyle = document.createElement('style')
+      this.docStyle.textContent = documentCss
+      document.head.appendChild(this.docStyle)
 
-  /*
-  Panels
-  */
-  const panelContainer = node({ tag: 'div', id: 'i_panel' })
+      // Create the UI
+      this.shadowRoot.innerHTML = `<style>${css}</style>${html}`
 
-  const fontFamily = sectionFactory('Font Family')
-  const fontSize = sectionFactory('Font Size')
-  const lineHeight = sectionFactory('Line Height')
-  const letterSpacing = sectionFactory('Letter Spacing')
+      // Refs to interactive elements
+      this.header = this.shadowRoot.querySelector('#header')
+      this.pickerBtn = this.shadowRoot.querySelector('#pickerBtn')
 
-  const fontStylePanels = [fontFamily, fontSize, lineHeight, letterSpacing]
+      this.fontFamily = this.shadowRoot.querySelector('#fontFamily')
+      this.fontSize = this.shadowRoot.querySelector('#fontSize')
+      this.fontWeight = this.shadowRoot.querySelector('#fontWeight')
+      this.lineHeight = this.shadowRoot.querySelector('#lineHeight')
+      this.letterSpacing = this.shadowRoot.querySelector('#letterSpacing')
+      this.textTransform = this.shadowRoot.querySelector('#textTransform')
 
-  for (const style in fontStylePanels) {
-    panelContainer.appendChild(fontStylePanels[style].section)
-  }
+      this.close = this.shadowRoot.querySelector('#close')
 
-  /*
-  Drag
-  */
-  let offsetX: number = 0
-  let offsetY: number = 0
-  let isDragging: boolean = false
-
-  function noDefault(e: any) {
-    e.preventDefault()
-  }
-
-  function startDrag(event: MouseEvent) {
-    isDragging = true
-    offsetX = event.clientX - modal.offsetLeft
-    offsetY = event.clientY - modal.offsetTop
-
-    document.addEventListener('mousemove', drag)
-    header.addEventListener('mouseup', endDrag)
-    document.addEventListener('selectstart', noDefault)
-  }
-
-  function drag(event: MouseEvent) {
-    event.preventDefault()
-    if (isDragging) {
-      modal.style.left = event.clientX - offsetX + 'px'
-      modal.style.top = event.clientY - offsetY + 'px'
-    }
-  }
-
-  function endDrag() {
-    localStorage.setItem(
-      'i_position',
-      JSON.stringify({
-        x: String(modal.offsetLeft),
-        y: String(modal.offsetTop)
+      // Interaction
+      this.header.addEventListener('mousedown', this.startDrag)
+      this.pickerBtn.addEventListener('click', () => {
+        this.pickerActive ? this.disablePicker() : this.enablePicker()
       })
-    )
-    isDragging = false
-    document.removeEventListener('mousemove', drag)
-    document.removeEventListener('selectstart', noDefault)
-  }
 
-  /*
-  Handlers
-  */
+      this.close.addEventListener('click', () => this.remove())
 
-  function enablePicker() {
-    state.pickerActive = true
-    pickerToggleButton.classList.add('isActive')
-    document.addEventListener('mouseover', mouseOverTarget)
-    document.addEventListener('mouseout', mouseOutTarget)
-    document.addEventListener('keydown', handleKeyPress)
-    document.addEventListener('click', handleActiveClick, true)
-  }
+      this.enablePicker()
+    }
 
-  function disablePicker() {
-    state.pickerActive = false
-    state.targetElement.classList.remove(pickerHoverClass)
-    pickerToggleButton.classList.remove('isActive')
-    document.removeEventListener('mouseover', mouseOverTarget)
-    document.removeEventListener('mouseout', mouseOutTarget)
-    document.removeEventListener('keydown', handleKeyPress)
-    document.removeEventListener('click', handleActiveClick, true)
-  }
+    disconnectedCallback() {
+      this.disablePicker()
+      this.docStyle.remove()
+    }
 
-  function mouseOverTarget(event: MouseEvent) {
-    const t = event.target as HTMLElement
+    /*
+    Handlers
+    */
+    noDefault = (e: Event) => {
+      e.preventDefault()
+    }
 
-    if (!isSelf(t) && !t.classList.contains(pickerHoverClass)) {
-      t.classList.add(pickerHoverClass)
-      update(t)
+    startDrag = (e: MouseEvent) => {
+      this.isDragging = true
+      this.offsetX = e.clientX - this.offsetLeft
+      this.offsetY = e.clientY - this.offsetTop
+
+      document.body.classList.add('inspector-noselect')
+      docEvent('mousemove', this.drag)
+      docEvent('mouseup', this.endDrag)
+      docEvent('selectstart', this.noDefault)
+    }
+
+    drag = (e: MouseEvent) => {
+      e.preventDefault()
+      if (this.isDragging) {
+        this.style.left = e.clientX - this.offsetX + 'px'
+        this.style.top = e.clientY - this.offsetY + 'px'
+      }
+    }
+
+    endDrag = () => {
+      this.isDragging = false
+      document.body.classList.remove('inspector-noselect')
+      docEventRm('mousemove', this.drag)
+      docEventRm('mouseup', this.endDrag)
+      docEventRm('selectstart', this.noDefault)
+    }
+
+    enablePicker = () => {
+      this.pickerActive = true
+      this.pickerBtn.classList.add('on')
+      docEvent('mouseover', this.mouseOverTarget)
+      docEvent('mouseout', this.mouseOutTarget)
+      docEvent('keydown', this.pickerActiveKeyPress)
+      docEvent('click', this.pickerActiveClick, true)
+    }
+
+    disablePicker = () => {
+      this.pickerActive = false
+      this.pickerBtn.classList.remove('on')
+      this.targetElement.classList.remove(this.pickerHoverClass)
+      docEventRm('mouseover', this.mouseOverTarget)
+      docEventRm('mouseout', this.mouseOutTarget)
+      docEventRm('keydown', this.pickerActiveKeyPress)
+      docEventRm('click', this.pickerActiveClick, true)
+    }
+
+    mouseOverTarget = (e: MouseEvent) => {
+      const t = e.target as HTMLElement
+
+      if (!this.isSelf(t) && !t.classList.contains(this.pickerHoverClass)) {
+        t.classList.add(this.pickerHoverClass)
+        this.update(t)
+      }
+    }
+
+    mouseOutTarget = (e: MouseEvent) => {
+      const t = e.target as HTMLElement
+      if (t.classList.contains(this.pickerHoverClass)) {
+        t.classList.remove(this.pickerHoverClass)
+      }
+    }
+
+    pickerActiveKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter') {
+        this.disablePicker()
+      }
+    }
+
+    pickerActiveClick = (e: MouseEvent) => {
+      if (!this.isSelf(e.target as HTMLElement)) {
+        e.preventDefault()
+        e.stopPropagation()
+        this.disablePicker()
+      }
+    }
+
+    isSelf = (t: HTMLElement) => {
+      return t === this || this.shadowRoot.contains(t)
+    }
+
+    update = (t: HTMLElement) => {
+      this.targetElement = t
+      const computedStyle = getComputedStyle(this.targetElement)
+
+      this.fontFamily.innerText = computedStyle.fontFamily
+      this.fontSize.innerText = computedStyle.fontSize
+      this.fontWeight.innerText = computedStyle.fontWeight
+      this.lineHeight.innerText = computedStyle.lineHeight
+      this.letterSpacing.innerText = computedStyle.letterSpacing
+      this.textTransform.innerText = computedStyle.textTransform
     }
   }
 
-  function mouseOutTarget(event: MouseEvent) {
-    const t = event.target as HTMLElement
-    if (t.classList.contains(pickerHoverClass)) {
-      t.classList.remove(pickerHoverClass)
-    }
-  }
-
-  function handleKeyPress(event: KeyboardEvent) {
-    if (event.key === 'Escape' || event.key === 'Enter') {
-      disablePicker()
-    }
-  }
-
-  function handleActiveClick(event: MouseEvent) {
-    if (!isSelf(event.target as HTMLElement)) {
-      event.preventDefault()
-      event.stopPropagation()
-      disablePicker()
-    }
-  }
-
-  function isSelf(target: HTMLElement) {
-    return modal.contains(target)
-  }
-
-  function update(target: HTMLElement) {
-    state.targetElement = target
-    const computedStyle = getComputedStyle(state.targetElement)
-
-    fontFamily.value.innerText = computedStyle.fontFamily
-    fontSize.value.innerText = computedStyle.fontSize
-    lineHeight.value.innerText = computedStyle.lineHeight
-    letterSpacing.value.innerText = computedStyle.letterSpacing
-  }
-
-  /*
-  Construct UI
-  */
-  modal.append(header, panelContainer)
-
-  this.mount = function () {
-    const savedPosition = JSON.parse(localStorage.getItem('i_position'))
-    modal.style.left = savedPosition?.x || '32'
-    modal.style.top = savedPosition?.y || '32'
-
-    document.head.append(styles)
-    document.body.append(modal)
-    header.addEventListener('mousedown', startDrag)
-
-    enablePicker()
-  }
-
-  function destroy() {
-    modal.remove()
-    styles.remove()
-    header.removeEventListener('mousedown', startDrag)
-  }
+  customElements.define('x-inspector', Inspector)
 }
 
-const inspector = new Inspector()
-inspector.mount()
+const instance = document.createElement('x-inspector')
+document.body.appendChild(instance)

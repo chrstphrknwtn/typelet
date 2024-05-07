@@ -6,8 +6,9 @@
   },
   "dependencies": {
     "@types/bun": "^1.1.1",
+    "@types/csso": "^5.0.4",
     "bun": "^1.1.7",
-    "esbuild": "^0.20.2",
-    "get-attrs": "^0.0.1"
+    "csso": "^5.0.5",
+    "esbuild": "^0.20.2"
   }
 }

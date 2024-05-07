@@ -1,0 +1,11 @@
+.inspector-noselect {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.inspector-hover {
+  background-color: hsla(0, 0%, 50%, 25%);
+  border-radius: 4px;
+}
