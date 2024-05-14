@@ -30,10 +30,10 @@
   flex-direction: column;
   top: 32px;
   left: 32px;
-  width: 272px;
+  width: 256px;
   font-size: 12px;
   line-height: 16px;
-  font-family: ui-system, sans-serif;
+  font-family: system-ui, sans-serif;
   color: var(--fg);
   background-color: var(--bg);
   border: 1pt solid var(--hr);
@@ -119,7 +119,6 @@ header {
 }
 
 .key {
-  padding-left: 2px;
   color: var(--fg2);
   white-space: nowrap;
   line-height: 24px;
