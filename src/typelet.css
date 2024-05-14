@@ -149,9 +149,6 @@ header {
   align-self: center;
 }
 
-.value {
-}
-
 .value::-webkit-scrollbar {
   display: none;
 }
