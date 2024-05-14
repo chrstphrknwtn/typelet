@@ -10,7 +10,6 @@ if (!customElements.get('x-inspector')) {
     private docStyle: HTMLElement | null
     private header: HTMLElement | null
     private close: HTMLButtonElement | null
-    private pickerBtn: HTMLButtonElement | null
 
     // Drag
     private offsetX: number = 0
@@ -19,52 +18,64 @@ if (!customElements.get('x-inspector')) {
 
     // Picker
     private pickerActive: boolean = false
-    private targetElement: HTMLElement | null = null
+    private pickerBtn: HTMLButtonElement | null
+    private pickerTargetElement: HTMLElement | null = null
+    private pickerTagReadout: HTMLElement | null
     private pickerHoverClass = 'inspector-hover'
+    private pickerDebounce: ReturnType<typeof setTimeout>
 
-    // Panel values
+    // Values
     private fontFamily: HTMLElement | null
     private fontSize: HTMLElement | null
     private fontWeight: HTMLElement | null
     private lineHeight: HTMLElement | null
     private letterSpacing: HTMLElement | null
-    private textTransform: HTMLElement | null
+    private fontFeatureSettings: HTMLElement | null
 
     constructor() {
       super()
       this.attachShadow({ mode: 'open' })
     }
 
-    connectedCallback() {
-      // We have to inject a couple of styles to the parent document
+    injectDocStyles() {
       this.docStyle = document.createElement('style')
       this.docStyle.textContent = documentCss
       document.head.appendChild(this.docStyle)
+    }
 
-      // Create the UI
+    injectUI() {
       this.shadowRoot.innerHTML = `<style>${css}</style>${html}`
+    }
 
-      // Refs to interactive elements
-      this.header = this.shadowRoot.querySelector('#header')
-      this.pickerBtn = this.shadowRoot.querySelector('#pickerBtn')
+    getElementRefs() {
+      const q = (selector: string): HTMLElement | HTMLButtonElement =>
+        this.shadowRoot!.querySelector(selector)
 
-      this.fontFamily = this.shadowRoot.querySelector('#fontFamily')
-      this.fontSize = this.shadowRoot.querySelector('#fontSize')
-      this.fontWeight = this.shadowRoot.querySelector('#fontWeight')
-      this.lineHeight = this.shadowRoot.querySelector('#lineHeight')
-      this.letterSpacing = this.shadowRoot.querySelector('#letterSpacing')
-      this.textTransform = this.shadowRoot.querySelector('#textTransform')
+      this.header = q('#header')
+      this.pickerBtn = q('#pickerBtn') as HTMLButtonElement
+      this.pickerTagReadout = q('#tag')
+      this.fontFamily = q('#fontFamily')
+      this.fontSize = q('#fontSize')
+      this.fontWeight = q('#fontWeight')
+      this.lineHeight = q('#lineHeight')
+      this.letterSpacing = q('#letterSpacing')
+      this.fontFeatureSettings = q('#fontFeatureSettings')
+      this.close = q('#close') as HTMLButtonElement
+    }
 
-      this.close = this.shadowRoot.querySelector('#close')
-
-      // Interaction
+    initBaseInteractions() {
       this.header.addEventListener('mousedown', this.startDrag)
       this.pickerBtn.addEventListener('click', () => {
         this.pickerActive ? this.disablePicker() : this.enablePicker()
       })
-
       this.close.addEventListener('click', () => this.remove())
+    }
 
+    connectedCallback() {
+      this.injectDocStyles()
+      this.injectUI()
+      this.getElementRefs()
+      this.initBaseInteractions()
       this.enablePicker()
     }
 
@@ -75,6 +86,7 @@ if (!customElements.get('x-inspector')) {
 
     /*
     Handlers
+    Use arrow functions so 'this' always references the Inspector class
     */
     noDefault = (e: Event) => {
       e.preventDefault()
@@ -119,7 +131,7 @@ if (!customElements.get('x-inspector')) {
     disablePicker = () => {
       this.pickerActive = false
       this.pickerBtn.classList.remove('on')
-      this.targetElement.classList.remove(this.pickerHoverClass)
+      this.pickerTargetElement.classList.remove(this.pickerHoverClass)
       docEventRm('mouseover', this.mouseOverTarget)
       docEventRm('mouseout', this.mouseOutTarget)
       docEventRm('keydown', this.pickerActiveKeyPress)
@@ -130,13 +142,18 @@ if (!customElements.get('x-inspector')) {
       const t = e.target as HTMLElement
 
       if (!this.isSelf(t) && !t.classList.contains(this.pickerHoverClass)) {
-        t.classList.add(this.pickerHoverClass)
-        this.update(t)
+        this.pickerDebounce = setTimeout(() => {
+          t.classList.add(this.pickerHoverClass)
+          this.update(t)
+          clearTimeout(this.pickerDebounce)
+        }, 75)
       }
     }
 
     mouseOutTarget = (e: MouseEvent) => {
       const t = e.target as HTMLElement
+      clearTimeout(this.pickerDebounce)
+
       if (t.classList.contains(this.pickerHoverClass)) {
         t.classList.remove(this.pickerHoverClass)
       }
@@ -161,15 +178,35 @@ if (!customElements.get('x-inspector')) {
     }
 
     update = (t: HTMLElement) => {
-      this.targetElement = t
-      const computedStyle = getComputedStyle(this.targetElement)
+      this.pickerTargetElement = t
+      this.pickerTagReadout.innerText = `<${t.tagName.toLowerCase()}>`
 
-      this.fontFamily.innerText = computedStyle.fontFamily
-      this.fontSize.innerText = computedStyle.fontSize
-      this.fontWeight.innerText = computedStyle.fontWeight
-      this.lineHeight.innerText = computedStyle.lineHeight
-      this.letterSpacing.innerText = computedStyle.letterSpacing
-      this.textTransform.innerText = computedStyle.textTransform
+      const {
+        fontFamily,
+        fontSize,
+        fontWeight,
+        lineHeight,
+        letterSpacing,
+        fontFeatureSettings
+      } = getComputedStyle(this.pickerTargetElement)
+
+      this.fontFamily.innerText = fontFamily
+      this.fontSize.innerText = fontSize
+      this.fontWeight.innerText = fontWeight !== 'normal' ? fontWeight : ''
+      this.lineHeight.innerText = lineHeight !== 'normal' ? lineHeight : ''
+      this.letterSpacing.innerText =
+        letterSpacing !== 'normal' ? letterSpacing : ''
+
+      this.fontFeatureSettings.innerHTML = ''
+
+      fontFeatureSettings.split(', ').forEach(feature => {
+        const featureNode = document.createElement('div')
+        featureNode.innerText =
+          feature === 'normal' || feature.endsWith('0')
+            ? ''
+            : feature.replace(/"/g, '')
+        this.fontFeatureSettings.appendChild(featureNode)
+      })
     }
   }
 
