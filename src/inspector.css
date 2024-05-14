@@ -30,7 +30,7 @@
   flex-direction: column;
   top: 32px;
   left: 32px;
-  width: 256px;
+  width: 272px;
   font-size: 12px;
   line-height: 16px;
   font-family: ui-system, sans-serif;
@@ -111,10 +111,9 @@ header {
 
 .datum {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-wrap: nowrap;
   justify-content: space-between;
-  gap: 4px;
+  gap: 16px;
   padding: 2px 12px 2px 14px;
   min-height: 28px;
 }
@@ -129,6 +128,7 @@ header {
 .values {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 4px;
 }
 
@@ -147,6 +147,10 @@ header {
   overflow: auto;
   text-align: right;
   border-radius: var(--br);
+  align-self: center;
+}
+
+.value {
 }
 
 .value::-webkit-scrollbar {
