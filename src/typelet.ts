@@ -21,7 +21,7 @@ if (!customElements.get('x-typelet')) {
     private pickerBtn: HTMLButtonElement | null
     private pickerTargetElement: HTMLElement | null = null
     private pickerTagReadout: HTMLElement | null
-    private pickerHoverClass = 'inspector-hover'
+    private pickerHoverClass = 'typelet-hover'
     private pickerDebounce: ReturnType<typeof setTimeout>
 
     // Values
@@ -86,7 +86,7 @@ if (!customElements.get('x-typelet')) {
 
     /*
     Handlers
-    Use arrow functions so 'this' always references the Inspector class
+    Use arrow functions so 'this' always references the Typelet class
     */
     noDefault = (e: Event) => {
       e.preventDefault()
@@ -97,7 +97,7 @@ if (!customElements.get('x-typelet')) {
       this.offsetX = e.clientX - this.offsetLeft
       this.offsetY = e.clientY - this.offsetTop
 
-      document.body.classList.add('inspector-noselect')
+      document.body.classList.add('typelet-noselect')
       docEvent('mousemove', this.drag)
       docEvent('mouseup', this.endDrag)
       docEvent('selectstart', this.noDefault)
@@ -113,7 +113,7 @@ if (!customElements.get('x-typelet')) {
 
     endDrag = () => {
       this.isDragging = false
-      document.body.classList.remove('inspector-noselect')
+      document.body.classList.remove('typelet-noselect')
       docEventRm('mousemove', this.drag)
       docEventRm('mouseup', this.endDrag)
       docEventRm('selectstart', this.noDefault)
