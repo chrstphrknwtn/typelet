@@ -6,14 +6,14 @@ const kbSize = (str: string): string => {
 
 const server = Bun.serve({
   async fetch() {
-    const code = await compile('src/inspector.ts')
+    const code = await compile('src/typelet.ts')
     const encoded = `javascript: ${encodeURIComponent(code)}`
 
     console.log(
       `${kbSize(code)} KB - Minified\n${kbSize(encoded)} KB - Encoded`
     )
 
-    const link = `<a href="${encoded}">Inspector</a>`
+    const link = `<a href="${encoded}">Typelet</a>`
 
     return new Response(link, {
       headers: { 'content-type': 'text/html' }

@@ -1,12 +1,12 @@
-import html from 'src/inspector.html'
-import css from 'src/inspector.css'
+import html from 'src/typelet.html'
+import css from 'src/typelet.css'
 import documentCss from 'src/document.css'
 
-if (!customElements.get('x-inspector')) {
+if (!customElements.get('x-typelet')) {
   const docEvent = document.addEventListener
   const docEventRm = document.removeEventListener
 
-  class Inspector extends HTMLElement {
+  class Typelet extends HTMLElement {
     private docStyle: HTMLElement | null
     private header: HTMLElement | null
     private close: HTMLButtonElement | null
@@ -210,8 +210,8 @@ if (!customElements.get('x-inspector')) {
     }
   }
 
-  customElements.define('x-inspector', Inspector)
+  customElements.define('x-typelet', Typelet)
 }
 
-const instance = document.createElement('x-inspector')
+const instance = document.createElement('x-typelet')
 document.body.appendChild(instance)
