@@ -143,7 +143,9 @@ if (!customElements.get('x-typelet')) {
 
       if (!this.isSelf(t) && !t.classList.contains(this.pickerHoverClass)) {
         this.pickerDebounce = setTimeout(() => {
-          t.classList.add(this.pickerHoverClass)
+          if (t.tagName !== 'BODY') {
+            t.classList.add(this.pickerHoverClass)
+          }
           this.update(t)
           clearTimeout(this.pickerDebounce)
         }, 75)

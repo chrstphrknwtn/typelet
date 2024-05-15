@@ -1,8 +1,5 @@
 <div align="center">
   <h1>Typelet</h1>
-  <p>
-    <a href="https://chrstphrknwtn.com/typelet/">chrstphrknwtn.com/typelet</a>
-  </p>
   <p>A bookmarklet for inspecting computed font styles</p>
   
   <picture>
